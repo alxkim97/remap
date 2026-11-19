@@ -88,6 +88,19 @@ export default function App(): React.JSX.Element {
 
   const dirtyIds = useMemo(() => new Set(pendingOps.map((op) => op.node.id)), [pendingOps])
 
+  // Main asks before restarting for an update; it needs to know whether
+  // un-applied plan edits would be lost.
+  const hasPending = pendingOps.length > 0
+  useEffect(() => window.api.setPendingPlan(hasPending), [hasPending])
+
+  const [updateReady, setUpdateReady] = useState<string | null>(null)
+  useEffect(() => {
+    const apply = (s: { state: string; version?: string }): void =>
+      setUpdateReady(s.state === 'downloaded' ? (s.version ?? '') : null)
+    void window.api.getUpdateStatus().then(apply)
+    return window.api.onUpdateStatus(apply)
+  }, [])
+
   const branchColors = useMemo(() => {
     if (!treeRef.current) return new Map<string, string>()
     return computeBranchColors(treeRef.current)
@@ -284,8 +297,17 @@ export default function App(): React.JSX.Element {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>FolderMapper</h1>
+        <h1>🗺️ Remap</h1>
         <div className="header-actions">
+          {updateReady !== null && (
+            <button
+              className="update-ready"
+              onClick={() => void window.api.restartToUpdate()}
+              title="A new version has been downloaded"
+            >
+              Update {updateReady} ready, restart
+            </button>
+          )}
           {rootPath && (
             <>
               <button onClick={handleExpandAll} disabled={scanning || busy}>
@@ -328,9 +350,11 @@ export default function App(): React.JSX.Element {
               </div>
             </>
           )}
-          <button onClick={handlePickFolder} disabled={scanning || busy}>
-            {rootPath ? 'Choose Different Folder' : 'Choose Folder'}
-          </button>
+          {rootPath && (
+            <button onClick={handlePickFolder} disabled={scanning || busy}>
+              Change Folder
+            </button>
+          )}
           <button onClick={handleUndoLastApplied} disabled={scanning || busy} className="secondary">
             Undo Last Move
           </button>
@@ -366,7 +390,14 @@ export default function App(): React.JSX.Element {
 
       {!rootPath && !scanning && (
         <div className="empty-state">
-          <p>Pick a folder to map it out. Nothing on disk changes until you confirm a plan.</p>
+          <div className="empty-card">
+            <span className="empty-emoji" aria-hidden="true">🗺️</span>
+            <h2>Map out a folder</h2>
+            <p>Drag things where they belong, review the plan, then apply it. Nothing on disk changes until you confirm.</p>
+            <button className="primary" onClick={handlePickFolder}>
+              Choose Folder
+            </button>
+          </div>
         </div>
       )}
 

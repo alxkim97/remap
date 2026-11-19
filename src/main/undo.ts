@@ -51,6 +51,12 @@ export async function applyUndo(logFile: string): Promise<UndoApplyResult> {
     try {
       if (entry.type === 'move') {
         if (entry.from === null) throw new Error('malformed entry')
+        // rename() on Windows silently replaces an existing file: never undo
+        // over something that has appeared at the original spot since.
+        const caseOnly = entry.to.toLowerCase() === entry.from.toLowerCase()
+        if (!caseOnly && (await fs.stat(entry.from).then(() => true, () => false))) {
+          throw new Error(`Something now exists at the original location; left in place: ${entry.from}`)
+        }
         await fs.rename(entry.to, entry.from)
         reversed++
       } else {

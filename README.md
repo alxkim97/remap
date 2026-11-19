@@ -1,4 +1,4 @@
-# FolderMapper
+# 🗺️ Remap
 
 Scan a folder, drag its contents into a new layout, review the plan, then apply it.
 
@@ -24,8 +24,29 @@ tools silently kill Node mid-extraction of the downloaded electron.exe zip
 PowerShell's `Expand-Archive` instead, which isn't affected. It runs
 automatically on `npm install`.
 
+If Electron starts as plain Node (`Cannot read properties of undefined
+(reading 'whenReady')`), the shell has `ELECTRON_RUN_AS_NODE=1` set (VS Code
+extension hosts do this). Unset it for the launch:
+`env -u ELECTRON_RUN_AS_NODE npm run dev`.
+
 ## Build
 
 ```
-npm run build
+npm run build      # compile only (out/)
+npm run dist       # typecheck + compile + Windows installer in dist/
 ```
+
+## Releasing an update (self-update)
+
+Installed copies check GitHub Releases on `alxkim97/remap` 10 s after start
+and every 6 h (and on demand from Settings → Check for Updates). A new
+version downloads in the background, then Remap asks to restart; if you say
+Later it installs the next time Remap quits. It never restarts while files
+are being moved, and warns when un-applied plan edits would be lost.
+
+1. Bump `version` in `package.json` (e.g. 0.2.0 → 0.2.1), commit, push.
+2. `npm run release` (needs `gh` logged in) builds the installer and creates
+   release `v<version>` with `Remap-Setup-<version>.exe`, its `.blockmap` and
+   `latest.yml`. All three are required for the updater.
+
+Dev runs (`npm run dev` / `npm start`) never self-update.

@@ -69,12 +69,58 @@ export async function validatePlan(nodes: PlanNode[]): Promise<PlanConflict[]> {
   return conflicts
 }
 
+const samePath = (a: string, b: string): boolean => a.toLowerCase() === b.toLowerCase()
+
+/**
+ * Makes `target` free before something moves or is created there. Windows'
+ * rename silently REPLACES an existing file, so a swap (a.txt <-> b.txt) or
+ * "move X out, move another X in" would destroy whichever file was still
+ * sitting at the target when its turn came. validatePlan lets such targets
+ * through because they are vacated later in the batch, so here the current
+ * occupant (another node in this plan that has not moved yet) is parked
+ * under a temporary name first; it reaches its own planned path on its own
+ * turn. Anything at the target that is NOT part of the plan is never
+ * touched: that op fails instead. `selfId` allows case-only renames
+ * (a.txt -> A.txt), where the "occupant" is the node itself.
+ */
+async function clearTarget(
+  target: string,
+  selfId: string | null,
+  currentPath: Map<string, string>,
+  leaving: Set<string>,
+  undoEntries: UndoLogEntry[]
+): Promise<void> {
+  if (!(await pathExists(target))) return
+  let occupant: string | null = null
+  for (const [id, p] of currentPath) {
+    if (samePath(p, target)) {
+      occupant = id
+      break
+    }
+  }
+  if (occupant === selfId && occupant !== null) return
+  if (occupant === null || !leaving.has(occupant)) {
+    throw new Error(`Target already exists and is not moving away in this plan: ${target}`)
+  }
+  const from = currentPath.get(occupant)!
+  let parked = `${from}.remap-tmp-${Date.now().toString(36)}`
+  for (let i = 1; await pathExists(parked); i++) parked = `${from}.remap-tmp-${Date.now().toString(36)}-${i}`
+  await fs.rename(from, parked)
+  cascade(currentPath, from, parked)
+  currentPath.set(occupant, parked)
+  undoEntries.push({ type: 'move', from, to: parked })
+}
+
 export async function executePlan(
   nodes: PlanNode[],
   rootPath: string
 ): Promise<PlanExecuteResponse> {
   const currentPath = new Map<string, string>()
   for (const n of nodes) if (!n.isNew) currentPath.set(n.id, n.originalPath!)
+  // Nodes that will end up somewhere else; only these may be parked out of the way.
+  const leaving = new Set(
+    nodes.filter((n) => !n.isNew && n.parentId !== null && n.plannedPath !== n.originalPath).map((n) => n.id)
+  )
 
   const results: PlanOpResult[] = []
   const undoEntries: UndoLogEntry[] = []
@@ -84,7 +130,9 @@ export async function executePlan(
 
     if (node.isNew) {
       try {
-        await fs.mkdir(node.plannedPath, { recursive: true })
+        await fs.mkdir(dirname(node.plannedPath), { recursive: true })
+        await clearTarget(node.plannedPath, null, currentPath, leaving, undoEntries)
+        await fs.mkdir(node.plannedPath)
         currentPath.set(node.id, node.plannedPath)
         undoEntries.push({ type: 'mkdir', from: null, to: node.plannedPath })
         results.push({ nodeId: node.id, status: 'created', from: null, to: node.plannedPath })
@@ -102,6 +150,7 @@ export async function executePlan(
 
     try {
       await fs.mkdir(dirname(node.plannedPath), { recursive: true })
+      await clearTarget(node.plannedPath, node.id, currentPath, leaving, undoEntries)
       await fs.rename(actual, node.plannedPath)
       cascade(currentPath, actual, node.plannedPath)
       currentPath.set(node.id, node.plannedPath)

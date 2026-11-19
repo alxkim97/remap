@@ -5,7 +5,8 @@ import type {
   PlanNode,
   ScanResult,
   UndoApplyResult,
-  UndoSummary
+  UndoSummary,
+  UpdateStatus
 } from '../shared/types'
 
 const api = {
@@ -29,7 +30,24 @@ const api = {
 
   applyUndo: (logFile: string): Promise<UndoApplyResult> => ipcRenderer.invoke('undo:apply', logFile),
 
-  openPath: (path: string): Promise<string> => ipcRenderer.invoke('shell:openPath', path)
+  openPath: (path: string): Promise<string> => ipcRenderer.invoke('shell:openPath', path),
+
+  getVersion: (): Promise<string> => ipcRenderer.invoke('app:version'),
+
+  getUpdateStatus: (): Promise<UpdateStatus> => ipcRenderer.invoke('updater:status'),
+
+  checkForUpdates: (): Promise<UpdateStatus> => ipcRenderer.invoke('updater:check'),
+
+  restartToUpdate: (): Promise<void> => ipcRenderer.invoke('updater:restart'),
+
+  /** Subscribe to update-status pushes; returns an unsubscribe function. */
+  onUpdateStatus: (cb: (status: UpdateStatus) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, status: UpdateStatus): void => cb(status)
+    ipcRenderer.on('updater:status', listener)
+    return () => ipcRenderer.removeListener('updater:status', listener)
+  },
+
+  setPendingPlan: (pending: boolean): void => ipcRenderer.send('plan:pending', pending)
 }
 
 contextBridge.exposeInMainWorld('api', api)

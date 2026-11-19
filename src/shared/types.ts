@@ -1,5 +1,14 @@
 // Types shared between main and renderer processes.
 
+/** Self-update state, pushed from main to the renderer's Settings panel. */
+export interface UpdateStatus {
+  state: 'dev' | 'idle' | 'checking' | 'none' | 'downloading' | 'downloaded' | 'error'
+  version?: string
+  percent?: number
+  checkedAt?: number
+  error?: string
+}
+
 /** One entry as read straight off disk during a scan. */
 export interface ScanEntry {
   id: string

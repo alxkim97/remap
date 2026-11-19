@@ -9,9 +9,10 @@ export const GRAPH_METRICS = {
 }
 
 /** Rough text-width estimate (12px UI font) so short names get a snug box and long ones get more room, up to the cap. */
-function measureNodeWidth(name: string): number {
+function measureNodeWidth(name: string, isDirectory: boolean): number {
   const { minNodeWidth, maxNodeWidth } = GRAPH_METRICS
-  const estimate = name.length * 6.6 + 58 // icon + padding + per-character allowance
+  // icon + padding + gaps (~58px), plus the size label (~56px) on files
+  const estimate = name.length * 7 + 58 + (isDirectory ? 0 : 56)
   return Math.max(minNodeWidth, Math.min(maxNodeWidth, estimate))
 }
 
@@ -63,7 +64,7 @@ export function computeGraphLayout(root: VirtualNode, expanded: Set<string>): Gr
       node: n,
       x: depth * colWidth,
       y: row * rowHeight,
-      width: measureNodeWidth(n.name),
+      width: measureNodeWidth(n.name, n.isDirectory),
       hasHiddenChildren: n.isDirectory && n.children.length > 0 && children.length === 0
     }
     nodes.push(ln)

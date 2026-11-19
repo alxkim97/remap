@@ -1,6 +1,6 @@
 export type Theme = 'system' | 'light' | 'dark'
 
-const STORAGE_KEY = 'foldermapper-theme'
+const STORAGE_KEY = 'remap-theme'
 
 export function loadTheme(): Theme {
   const stored = localStorage.getItem(STORAGE_KEY)

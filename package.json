@@ -1,17 +1,57 @@
 {
-  "name": "foldermapper",
-  "version": "0.1.0",
+  "name": "remap",
+  "version": "0.2.0",
   "private": true,
   "description": "Scan a folder, drag its contents into a new layout, review the plan, then apply the moves.",
+  "author": "Alex",
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "start": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "dist": "npm run typecheck && electron-vite build && electron-builder --win --x64 --publish never",
+    "release": "npm run dist && node scripts/publish-release.cjs",
     "postinstall": "node scripts/ensure-electron.js"
   },
+  "build": {
+    "appId": "com.alexkim.remap",
+    "productName": "Remap",
+    "copyright": "Copyright © 2026 Alex",
+    "files": [
+      "out/**/*",
+      "build/icon.png"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "artifactName": "Remap-Setup-${version}.${ext}",
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Remap"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "alxkim97",
+      "repo": "remap"
+    }
+  },
   "dependencies": {
+    "electron-updater": "^6.8.9",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -21,6 +61,7 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "electron": "^33.2.1",
+    "electron-builder": "^26.15.3",
     "electron-vite": "^2.3.0",
     "typescript": "^5.7.2",
     "vite": "^5.4.11"
