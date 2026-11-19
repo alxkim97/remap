@@ -71,8 +71,8 @@ app.whenReady().then(() => {
     return validatePlan(nodes)
   })
 
-  ipcMain.handle('plan:execute', async (_event, nodes: PlanNode[], rootPath: string) => {
-    return trackFileOp(() => executePlan(nodes, rootPath))
+  ipcMain.handle('plan:execute', async (_event, nodes: PlanNode[], rootPath: string, writeHistory: boolean) => {
+    return trackFileOp(() => executePlan(nodes, rootPath, writeHistory === true))
   })
 
   ipcMain.handle('undo:list', async () => listUndoLogs())

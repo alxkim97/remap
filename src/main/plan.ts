@@ -8,6 +8,7 @@ import type {
   UndoLogEntry
 } from '../shared/types'
 import { writeUndoLog } from './undo'
+import { appendApplyEntry } from './remapLog'
 
 async function pathExists(path: string): Promise<boolean> {
   try {
@@ -113,7 +114,8 @@ async function clearTarget(
 
 export async function executePlan(
   nodes: PlanNode[],
-  rootPath: string
+  rootPath: string,
+  writeHistory = false
 ): Promise<PlanExecuteResponse> {
   const currentPath = new Map<string, string>()
   for (const n of nodes) if (!n.isNew) currentPath.set(n.id, n.originalPath!)
@@ -163,5 +165,17 @@ export async function executePlan(
 
   const undoLogPath = undoEntries.length > 0 ? await writeUndoLog(rootPath, undoEntries) : null
 
-  return { results, undoLogPath }
+  // The readable history in the folder itself. A failure here must never
+  // turn a successful apply into an error: it is reported alongside instead.
+  let historyFile: string | null = null
+  let historyError: string | undefined
+  if (writeHistory) {
+    try {
+      historyFile = await appendApplyEntry(rootPath, nodes, results, Date.now())
+    } catch (err) {
+      historyError = String(err instanceof Error ? err.message : err)
+    }
+  }
+
+  return { results, undoLogPath, historyFile, historyError }
 }

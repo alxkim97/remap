@@ -57,6 +57,9 @@ export type PlanOpResult =
 export interface PlanExecuteResponse {
   results: PlanOpResult[]
   undoLogPath: string | null
+  /** REMAP-LOG.md written in the remapped folder, when asked for and something changed */
+  historyFile?: string | null
+  historyError?: string
 }
 
 export interface UndoLogEntry {

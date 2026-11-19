@@ -39,6 +39,22 @@ export default function App(): React.JSX.Element {
   const [canRedo, setCanRedo] = useState(false)
   const [theme, setTheme] = useState<Theme>(() => loadTheme())
   const [showSettings, setShowSettings] = useState(false)
+  // Write REMAP-LOG.md into the folder on Apply; on by default, remembered per PC.
+  const [writeHistory, setWriteHistory] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('remap-write-history') !== 'off'
+    } catch {
+      return true
+    }
+  })
+  function handleWriteHistoryChange(on: boolean): void {
+    setWriteHistory(on)
+    try {
+      localStorage.setItem('remap-write-history', on ? 'on' : 'off')
+    } catch {
+      // not remembered; still applies to this session
+    }
+  }
 
   const treeRef = useRef<VirtualNode | null>(null)
   const nodeMapRef = useRef<Map<string, VirtualNode>>(new Map())
@@ -254,10 +270,10 @@ export default function App(): React.JSX.Element {
     setBusy(true)
     try {
       const nodes = serializeForPlan(treeRef.current)
-      const result = await window.api.executePlan(nodes, rootPath)
-      setLastResult(result)
+      const result = await window.api.executePlan(nodes, rootPath, writeHistory)
       setShowConfirm(false)
       await loadFolder(rootPath) // refresh from the real, now-updated disk state
+      setLastResult(result) // after the refresh: loadFolder clears the banner
     } finally {
       setBusy(false)
     }
@@ -384,7 +400,8 @@ export default function App(): React.JSX.Element {
           {lastResult.results.filter((r) => r.status === 'created').length} created
           {lastResult.results.some((r) => r.status === 'failed') &&
             `, ${lastResult.results.filter((r) => r.status === 'failed').length} failed (see console)`}
-          .
+          .{lastResult.historyFile && ' Recorded in REMAP-LOG.md.'}
+          {lastResult.historyError && ` Could not write REMAP-LOG.md: ${lastResult.historyError}`}
         </div>
       )}
 
@@ -443,6 +460,8 @@ export default function App(): React.JSX.Element {
         <ConfirmModal
           ops={pendingOps}
           busy={busy}
+          writeHistory={writeHistory}
+          onWriteHistoryChange={handleWriteHistoryChange}
           onCancel={() => setShowConfirm(false)}
           onConfirm={handleConfirm}
         />

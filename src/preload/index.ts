@@ -23,8 +23,8 @@ const api = {
   validatePlan: (nodes: PlanNode[]): Promise<PlanConflict[]> =>
     ipcRenderer.invoke('plan:validate', nodes),
 
-  executePlan: (nodes: PlanNode[], rootPath: string): Promise<PlanExecuteResponse> =>
-    ipcRenderer.invoke('plan:execute', nodes, rootPath),
+  executePlan: (nodes: PlanNode[], rootPath: string, writeHistory: boolean): Promise<PlanExecuteResponse> =>
+    ipcRenderer.invoke('plan:execute', nodes, rootPath, writeHistory),
 
   listUndoLogs: (): Promise<UndoSummary[]> => ipcRenderer.invoke('undo:list'),
 

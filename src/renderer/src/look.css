@@ -313,6 +313,31 @@ button.update-ready:hover:not(:disabled),
 .modal-actions button:not(.confirm-button):not(.primary) { background: var(--surface-2); }
 .modal-actions button:not(.confirm-button):not(.primary):hover:not(:disabled) { background: var(--surface-3); }
 
+/* Long absolute paths in the confirm list wrap instead of stretching */
+.modal-dest { overflow-wrap: anywhere; }
+
+/* ── Confirm dialog: REMAP-LOG.md toggle ── */
+.history-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  cursor: pointer;
+}
+.history-toggle input {
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--pill);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.history-toggle-title { display: block; font-weight: 650; }
+.history-toggle-hint { display: block; margin-top: 2px; font-size: 12.5px; color: var(--text-dim); line-height: 1.45; }
+
 /* ── Settings: Apple grouped list ── */
 .settings-modal { width: 480px; }
 .settings-section-label {

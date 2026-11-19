@@ -2,6 +2,7 @@ import { app } from 'electron'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import type { UndoApplyResult, UndoLog, UndoLogEntry, UndoSummary } from '../shared/types'
+import { appendUndoEntry } from './remapLog'
 
 function undoDir(): string {
   return join(app.getPath('userData'), 'undo-logs')
@@ -76,6 +77,13 @@ export async function applyUndo(logFile: string): Promise<UndoApplyResult> {
 
   // Once reversed, retire the log so it can't be double-applied.
   await fs.rm(logFile, { force: true })
+
+  // Note it in the folder's REMAP-LOG.md (only if that folder keeps one).
+  try {
+    await appendUndoEntry(log.rootPath, log.timestamp, reversed, failed.length)
+  } catch {
+    // the undo itself succeeded; a missing note is not worth failing over
+  }
 
   return { reversed, failed }
 }

@@ -3,6 +3,8 @@ import type { PendingOp } from '../planDiff'
 interface ConfirmModalProps {
   ops: PendingOp[]
   busy: boolean
+  writeHistory: boolean
+  onWriteHistoryChange: (on: boolean) => void
   onCancel: () => void
   onConfirm: () => void
 }
@@ -28,6 +30,22 @@ export function ConfirmModal(props: ConfirmModalProps): React.JSX.Element {
             </li>
           ))}
         </ul>
+        <label className="history-toggle" htmlFor="write-history">
+          <input
+            id="write-history"
+            type="checkbox"
+            checked={props.writeHistory}
+            onChange={(e) => props.onWriteHistoryChange(e.target.checked)}
+            disabled={props.busy}
+          />
+          <span>
+            <span className="history-toggle-title">Record in REMAP-LOG.md</span>
+            <span className="history-toggle-hint">
+              Adds a dated list of these changes to a file in this folder, so people and Claude chats can see what moved.
+              In a git repo, commit it with the moves.
+            </span>
+          </span>
+        </label>
         <div className="modal-actions">
           <button onClick={props.onCancel} disabled={props.busy}>
             Cancel

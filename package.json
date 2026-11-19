@@ -1,6 +1,6 @@
 {
   "name": "remap",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Scan a folder, drag its contents into a new layout, review the plan, then apply the moves.",
   "author": "Alex",
